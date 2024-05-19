@@ -16,5 +16,69 @@ const register = asyncHandler(async (req, res) => {
     return SuccessResponse(res, "User registered successfully");
 });
 
+const login = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
 
-export { register };
+    if (!email || !password) {
+        return ErrorResponse(res, 400, "Fill all the details");
+    }
+
+    const user = await USER.findOne({ email });
+    if (!user) {
+        return ErrorResponse(res, 404, "User does not exists");
+    }
+
+    const passwordCorrect = await user.validatePassword(password);
+
+    if (!passwordCorrect) {
+        return ErrorResponse(res, 401, "Password is incorrect");
+    }
+
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    user.password = undefined;
+    user.refreshToken = undefined;
+    user.avatar = undefined;
+    user.coverImage = undefined;
+    user.watchHistory = undefined;
+
+    const options = {
+        httpOnly : true,
+        secure : true
+    }
+
+    return res.status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json({
+        succes: true,
+        message: "Logged in",
+        user,
+        accessToken,
+        refreshToken
+    });
+});
+
+const logout = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+
+    const user = await USER.findByIdAndUpdate(userId, {refreshToken : ""});
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res.status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json({
+        success: true,
+        message: "Logged Out"
+    });
+});
+
+export { register, login, logout };
