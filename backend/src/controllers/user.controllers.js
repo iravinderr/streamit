@@ -65,7 +65,7 @@ const login = asyncHandler(async (req, res) => {
 const logout = asyncHandler(async (req, res) => {
     const userId = req.user._id;
 
-    const user = await USER.findByIdAndUpdate(userId, {refreshToken : ""});
+    await USER.findByIdAndUpdate(userId, {refreshToken : ""});
 
     const options = {
         httpOnly: true,
