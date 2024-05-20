@@ -1,3 +1,4 @@
+import jwt from "jsonwebtoken";
 import { USER } from "../models/user.models.js";
 import { asyncHandler } from "../utils/handler.utils.js";
 import { ErrorResponse, SuccessResponse } from "../utils/response.utils.js";
@@ -81,4 +82,44 @@ const logout = asyncHandler(async (req, res) => {
     });
 });
 
-export { register, login, logout };
+const refreshAccessToken = asyncHandler(async (req, res) => {
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+    if (!incomingRefreshToken) {
+        return ErrorResponse(res, 401, "Unauthorised request");
+    }
+
+    const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+    
+    const user = await USER.findById(decodedToken?._id);
+    if (!user) {
+        return ErrorResponse(res, 400, "Invalid token");
+    }
+
+    if (incomingRefreshToken !== user.refreshToken) {
+        return ErrorResponse(res, 401, "Refresh access token is expired. Login again");
+    }
+
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    const options = {
+        httpOnly : true,
+        secure : true
+    };
+
+    return res.status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json({
+        succes: true,
+        message: "Logged in",
+        user,
+        accessToken,
+        refreshToken
+    });
+});
+
+export { register, login, logout, refreshAccessToken };
