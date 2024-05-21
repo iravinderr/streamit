@@ -38,7 +38,7 @@ const login = asyncHandler(async (req, res) => {
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
     user.refreshToken = refreshToken;
-    await user.save();
+    await user.save({validateBeforeSave: false});
 
     user.password = undefined;
     user.refreshToken = undefined;
@@ -122,4 +122,36 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     });
 });
 
-export { register, login, logout, refreshAccessToken };
+const changePassword = asyncHandler(async (req, res) => {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+
+    if (newPassword !== confirmPassword) {
+        return ErrorResponse(res, 400, "Password does not match");
+    }
+
+    const user = await USER.findById(req.user?._id);
+
+    const passwordCorrect = await user.validatePassword(oldPassword);
+    if (!passwordCorrect) {
+        return ErrorResponse(res, 400, "Old password is incorrect");
+    }
+
+    user.password = newPassword;
+    await user.save({validateBeforeSave: false});
+
+    return SuccessResponse(res, "Password changed successfully");
+});
+
+const getUser = asyncHandler(async (req, res) => {
+    return SuccessResponse(res, "Succes", req.user);
+});
+
+const updateUser = asyncHandler(async (req, res) => {
+    const { fullName } = req.body;
+
+    await USER.findByIdAndUpdate(req.user?._id, {fullName}, {new: true});
+
+    return SuccessResponse(res, "Details updated succesfully");
+});
+
+export { register, login, logout, refreshAccessToken, changePassword, getUser, updateUser };

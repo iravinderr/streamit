@@ -4,7 +4,6 @@ import { ErrorResponse } from "../utils/response.utils.js";
 import { USER } from "../models/user.models.js";
 
 
-
 const verifyToken = asyncHandler(async (req, res, next) =>{
     const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
     if (!token) {
@@ -18,8 +17,7 @@ const verifyToken = asyncHandler(async (req, res, next) =>{
         return ErrorResponse(res, 400, "Session expired. Login again.")
     }
 
-    req.user = decodedToken;
-
+    req.user = user;
     next();
 });
 
