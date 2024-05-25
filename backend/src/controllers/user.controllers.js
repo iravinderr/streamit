@@ -2,20 +2,47 @@ import jwt from "jsonwebtoken";
 import { USER } from "../models/user.models.js";
 import { asyncHandler } from "../utils/handler.utils.js";
 import { ErrorResponse, SuccessResponse } from "../utils/response.utils.js";
+import { OTP } from "../models/otp.models.js";
+import { DETAILS } from "../models/details.models.js";
 
+
+// ================================================== REGISTRATION CONTROLLERS ==================================================
 
 const register = asyncHandler(async (req, res) => {
-    const { fullName, username, email, password } = req.body;
+    const { fullName, email, password } = req.body;
+
+    if (!fullName || !email || !password) {
+        return ErrorResponse(res, 400, "Fill all the required fields")
+    }
 
     const user = await USER.findOne({ username, email });
     if (user) {
-        return ErrorResponse(res, 400, "User already exists");
+        return ErrorResponse(res, 400, "Account already exists");
     }
 
-    await USER.create({ fullName, username, email, password });
+    await OTP.create({ email });
 
-    return SuccessResponse(res, "User registered successfully");
+    return SuccessResponse(res, "A verification otp has been sent to your email");
 });
+
+const confirmRegistration = asyncHandler(async (req, res) => {
+    const { fullName, email, password, otp } = req.body;
+
+    const recentOTP = await OTP.findOne({ email }).sort({ createdAt : -1 }).limit(1);
+    if (!recentOTP) {
+        return ErrorResponse(res, 404, "OTP expired. Try Again.");
+    } else if (otp !== recentOTP) {
+        return ErrorResponse(res, 401, "Enterd otp is incorrect");
+    }
+
+    const details = await DETAILS.create({ fullName });
+    await USER.create({ email, password, verified: true, details: details._id });
+
+    return SuccessResponse(res, "Account created successfully");
+});
+
+
+// ================================================== LOGIN/LOGOUT CONTROLLERS ==================================================
 
 const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
@@ -82,6 +109,9 @@ const logout = asyncHandler(async (req, res) => {
     });
 });
 
+
+// ================================================== TOKEN CONTROLLERS ==================================================
+
 const refreshAccessToken = asyncHandler(async (req, res) => {
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
@@ -121,6 +151,9 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         refreshToken
     });
 });
+
+
+// ================================================== CHANGE/RESET PASSWORD CONTROLLERS ==================================================
 
 const changePassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword, confirmPassword } = req.body;
@@ -176,4 +209,13 @@ const getChannelDetails = asyncHandler(async (req, res) => {
     ]);
 });
 
-export { register, login, logout, refreshAccessToken, changePassword, getUserDetails, updateUserDetails };
+export { 
+    register,
+    confirmRegistration,
+    login,
+    logout,
+    refreshAccessToken,
+    changePassword,
+    getUserDetails,
+    updateUserDetails
+};
