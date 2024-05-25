@@ -12,7 +12,7 @@ const verifyToken = asyncHandler(async (req, res, next) =>{
 
     const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-    const user = await USER.findById(decodedToken?._id);
+    const user = await USER.findById(decodedToken?._id).select("-password -refreshToken");
     if (!user) {
         return ErrorResponse(res, 400, "Session expired. Login again.")
     }

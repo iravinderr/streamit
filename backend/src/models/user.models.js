@@ -4,6 +4,11 @@ import jwt from "jsonwebtoken";
 
 const userSchema = new Schema(
     {
+        fullName: {
+            type: String,
+            required: true,
+            trim: true
+        },
         username: {
             type: String,
             required: true,
@@ -34,9 +39,17 @@ const userSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: "VIDEO"
         }],
-        details: {
-            type: Schema.Types.ObjectId,
-            ref: "DETAILS"
+        avatar: {
+            type: String,
+        },
+        coverImage: {
+            type: String,
+        },
+        DOB : {
+            type: Date,
+        },
+        phone: {
+            type: String
         }
     },
 
