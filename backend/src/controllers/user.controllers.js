@@ -237,7 +237,7 @@ const updateUserDetails = asyncHandler(async (req, res) => {
 const getChannelDetails = asyncHandler(async (req, res) => {
     const { username } = req.params;
 
-    if (!username?.trim()) {
+    if (!username) {
         return ErrorResponse(res, 400, "Username is missing");
     }
 
@@ -252,8 +252,50 @@ const getChannelDetails = asyncHandler(async (req, res) => {
                 foreignField: "channel",
                 as: "subscribers"
             }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subsciber",
+                as: "subscriptions"
+            }
+        },
+        {
+            $addFields: {
+                subscriberCount : {
+                    $size: "$subscribers"
+                },
+                subscriptionCount : {
+                    $size: "$subscriptions"
+                },
+                isSubscribed: {
+                    $cond: {
+                        if: {$in: [req.user?._id, "$subscribers.subscriber"]},
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                fullName: 1,
+                username: 1,
+                subscriberCount: 1,
+                subscriberCount: 1,
+                isSubscribed: 1,
+                avatar: 1,
+                coverImage: 1
+            }
         }
     ]);
+
+    if (!channelDetails?.length) {
+        return ErrorResponse(404, "Channel does not exists");
+    }
+
+    return SuccessResponse(res, "Success", channelDetails[0]);
 });
 
 
@@ -269,5 +311,6 @@ export {
     validateResetPasswordOTP,
     resetPassword,
     getUserDetails,
-    updateUserDetails
+    updateUserDetails,
+    getChannelDetails
 };
