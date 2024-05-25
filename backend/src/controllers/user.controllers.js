@@ -142,11 +142,11 @@ const changePassword = asyncHandler(async (req, res) => {
     return SuccessResponse(res, "Password changed successfully");
 });
 
-const getUser = asyncHandler(async (req, res) => {
+const getUserDetails = asyncHandler(async (req, res) => {
     return SuccessResponse(res, "Succes", req.user);
 });
 
-const updateUser = asyncHandler(async (req, res) => {
+const updateUserDetails = asyncHandler(async (req, res) => {
     const { fullName } = req.body;
 
     await USER.findByIdAndUpdate(req.user?._id, {fullName}, {new: true});
@@ -154,4 +154,26 @@ const updateUser = asyncHandler(async (req, res) => {
     return SuccessResponse(res, "Details updated succesfully");
 });
 
-export { register, login, logout, refreshAccessToken, changePassword, getUser, updateUser };
+const getChannelDetails = asyncHandler(async (req, res) => {
+    const { username } = req.params;
+
+    if (!username?.trim()) {
+        return ErrorResponse(res, 400, "Username is missing");
+    }
+
+    const channelDetails = await USER.aggregate([
+        {
+            $match: { username: username?.toLowerCase() }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscribers"
+            }
+        }
+    ]);
+});
+
+export { register, login, logout, refreshAccessToken, changePassword, getUserDetails, updateUserDetails };

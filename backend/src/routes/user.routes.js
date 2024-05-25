@@ -2,12 +2,12 @@ import { Router } from "express";
 import { upload } from "../middlewares/multer.middlewares.js";
 import { 
     changePassword,
-    getUser,
+    getUserDetails,
     login, 
     logout, 
     refreshAccessToken, 
     register, 
-    updateUser} from "../controllers/user.controllers.js";
+    updateUserDetails} from "../controllers/user.controllers.js";
 import { verifyToken } from "../middlewares/user.middlewares.js";
 
 const router = Router();
@@ -23,8 +23,8 @@ router.post("/refresh-tokens", upload.none(), refreshAccessToken);
 
 router.post("/change-password", verifyToken, upload.none(), changePassword);
 
-router.get("/get-details", verifyToken, getUser);
+router.get("/get-details", verifyToken, getUserDetails);
 
-router.put("/update-details", verifyToken, upload.none(), updateUser);
+router.put("/update-details", verifyToken, upload.none(), updateUserDetails);
 
 export default router;
