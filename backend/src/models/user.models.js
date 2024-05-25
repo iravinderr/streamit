@@ -45,6 +45,10 @@ const userSchema = new Schema(
         coverImage: {
             type: String,
         },
+        gender: {
+            type: String,
+            enum: ["Male", "Female", "Others"]
+        },
         DOB : {
             type: Date,
         },
